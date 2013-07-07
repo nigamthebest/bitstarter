@@ -1,15 +1,11 @@
 var express = require('express');
-var fs = require('fs');
+
 
 var app = express.createServer(express.logger());
 var inputfile = "index.html";
 app.get('/', function(request, response) {
-var data = fs.readFile(inputfile, 'utf8', function (err,data) {
-  if (err) {
-    return console.log(err);
-  }
-  return data;
-});
+var fs = require('fs');
+var data = fs.readFileSync(inputfile, 'utf8');
   response.send(data);
 });
 
