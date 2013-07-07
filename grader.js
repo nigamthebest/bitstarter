@@ -22,10 +22,12 @@ References:
 */
 
 var fs = require('fs');
+var request = require('request');
 var program = require('commander');
 var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
+var URL_DEFAULT = "http://github.com";
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -36,6 +38,16 @@ var assertFileExists = function(infile) {
     return instr;
 };
 
+var assertURLExists = function(url) {
+   request(url, function (error, response, body) {
+  if (error) {
+	 console.log("URL is not reachable. Returning error '%s'. Exiting.", error.message);
+	 process.exit(1);
+  }
+});
+return true;
+}
+
 var cheerioHtmlFile = function(htmlfile) {
     return cheerio.load(fs.readFileSync(htmlfile));
 };
@@ -43,6 +55,11 @@ var cheerioHtmlFile = function(htmlfile) {
 var loadChecks = function(checksfile) {
     return JSON.parse(fs.readFileSync(checksfile));
 };
+var downloadURLDataToFile = function (url){
+	var outfile = "url_content.html";
+	request(url).pipe(fs.createWriteStream(outfile));
+	return outfile;
+}
 
 var checkHtmlFile = function(htmlfile, checksfile) {
     $ = cheerioHtmlFile(htmlfile);
@@ -65,8 +82,12 @@ if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+		.option('-u, --url <url>', 'URL to html file', URL_DEFAULT)
         .parse(process.argv);
     var checkJson = checkHtmlFile(program.file, program.checks);
+	if(assertURLExists(program.url)==true){
+		var checkJsonFromURL = checkHtmlFile(downloadURLDataToFile(program.url), program.checks);
+	}
     var outJson = JSON.stringify(checkJson, null, 4);
     console.log(outJson);
 } else {
